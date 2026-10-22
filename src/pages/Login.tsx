@@ -1,49 +1,95 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../utils/supabase'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
+  const [enteredName, setEnteredName] = useState('')
+  const [enteredPassword, setEnteredPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
 
-  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (loading) return
     setLoading(true)
-    setMessage('')
+    setErrorMessage('')
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin },
+      const { data, error } = await supabase.functions.invoke('login-with-username', {
+        body: { username: enteredName.trim(), password: enteredPassword },
       })
-      setMessage(error ? error.message : 'Check your email for the login link!')
+      if (error) {
+        if (error instanceof FunctionsHttpError) {
+          const body = await error.context.json().catch(() => null)
+          setErrorMessage(body?.error || 'Unable to log in. Please try again.')
+        } else {
+          setErrorMessage('Unable to reach the login service. Please try again later.')
+        }
+        return
+      }
+      if (!data?.session?.access_token || !data?.session?.refresh_token) {
+        setErrorMessage('Unable to log in. Please try again.')
+        return
+      }
+      const { error: sessionError } = await supabase.auth.setSession(data.session)
+      if (sessionError) {
+        setErrorMessage('Unable to start your session. Please log in again.')
+      } else {
+        setEnteredPassword('')
+        // App's auth listener redirects authenticated users to /dashboard.
+      }
     } catch {
-      setMessage('Unable to send the login link. Please try again.')
+      setErrorMessage('Unable to log in. Please try again later.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main>
-      <h1>Login</h1>
-      <p>Sign in via magic link with your email below.</p>
-      <form onSubmit={handleLogin}>
-        <label htmlFor="login-email">Email</label>
+    <main className="login-page">
+      <h1>5 Guys Coding</h1>
+      <img
+        src="https://ih1.redbubble.net/image.2000986734.3760/raf,360x360,075,t,fafafa:ca443f4786.jpg"
+        alt="5 Guys Coding logo"
+        width={200}
+      />
+      <form onSubmit={handleSubmit}>
+        <p>
+          <label htmlFor="username">Please enter your username</label>
+        </p>
         <input
-          id="login-email"
-          type="email"
-          autoComplete="email"
-          placeholder="Your email"
-          value={email}
+          id="username"
+          type="text"
+          autoComplete="username"
+          value={enteredName}
+          onChange={(event) => setEnteredName(event.target.value)}
+          placeholder="Enter your username"
+          maxLength={100}
           required
-          onChange={(event) => setEmail(event.target.value)}
         />
-        <button type="submit" disabled={loading}>
-          {loading ? 'Sending...' : 'Send magic link'}
-        </button>
-        <p role="status">{message}</p>
+        <p>
+          <label htmlFor="password">Please enter your password</label>
+        </p>
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          value={enteredPassword}
+          onChange={(event) => setEnteredPassword(event.target.value)}
+          placeholder="Enter your password"
+          required
+        />
+        <p>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Logging in...' : 'Log in'}
+          </button>
+        </p>
+        {errorMessage && <p role="alert">{errorMessage}</p>}
       </form>
+      <p>Make an account</p>
+      <button type="button" disabled>
+        Create Account
+      </button>
     </main>
   )
 }
