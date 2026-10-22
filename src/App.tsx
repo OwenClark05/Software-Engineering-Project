@@ -3,6 +3,10 @@ import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
 import type { JwtPayload } from '@supabase/supabase-js'
 import { supabase } from './utils/supabase'
+import Dashboard from './pages/Dashboard'
+
+const isDashboardPreview =
+  import.meta.env.DEV && window.location.pathname.replace(/\/+$/, '') === '/dashboard'
 
 export default function App() {
   const [loading, setLoading] = useState(false)
@@ -18,6 +22,8 @@ export default function App() {
   const [authSuccess, setAuthSuccess] = useState(false)
 
   useEffect(() => {
+    if (isDashboardPreview) return
+
     // Check if we have token_hash in URL (magic link callback)
     const params = new URLSearchParams(window.location.search)
     const token_hash = params.get('token_hash')
@@ -86,6 +92,17 @@ export default function App() {
     setClaims(null)
   }
 
+  // Allow dashboard design work without a session on the development server.
+  if (isDashboardPreview) {
+    return (
+      <Dashboard
+        onLogout={async () => {
+          window.location.assign('/')
+        }}
+      />
+    )
+  }
+
   // Show verification state
   if (verifying) {
     return (
@@ -127,15 +144,9 @@ export default function App() {
     )
   }
 
-  // If user is logged in, show welcome screen
+  // If user is logged in, show dashboard
   if (claims) {
-    return (
-      <div>
-        <h1>Welcome!</h1>
-        <p>You are logged in as: {claims.email}</p>
-        <button onClick={handleLogout}>Sign Out</button>
-      </div>
-    )
+    return <Dashboard onLogout={handleLogout} />
   }
 
   // Show login form
