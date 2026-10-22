@@ -1,16 +1,14 @@
 import './index.css'
 import { useState, useEffect } from 'react'
-import type { FormEvent } from 'react'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import type { JwtPayload } from '@supabase/supabase-js'
 import { supabase } from './utils/supabase'
 import Dashboard from './pages/Dashboard'
-
-const isDashboardPreview =
-  import.meta.env.DEV && window.location.pathname.replace(/\/+$/, '') === '/dashboard'
+import Login from './pages/Login'
 
 export default function App() {
-  const [loading, setLoading] = useState(false)
-  const [email, setEmail] = useState('')
+  const navigate = useNavigate()
+  const [checkingSession, setCheckingSession] = useState(true)
   const [claims, setClaims] = useState<JwtPayload | null>(null)
 
   // Check URL params on initial render
@@ -22,8 +20,6 @@ export default function App() {
   const [authSuccess, setAuthSuccess] = useState(false)
 
   useEffect(() => {
-    if (isDashboardPreview) return
-
     // Check if we have token_hash in URL (magic link callback)
     const params = new URLSearchParams(window.location.search)
     const token_hash = params.get('token_hash')
@@ -42,7 +38,7 @@ export default function App() {
           } else {
             setAuthSuccess(true)
             // Clear URL params
-            window.history.replaceState({}, document.title, '/')
+            navigate('/', { replace: true })
           }
           setVerifying(false)
         })
@@ -51,6 +47,7 @@ export default function App() {
     // Check for existing session using getClaims
     supabase.auth.getClaims().then(({ data, error }) => {
       setClaims(error ? null : (data?.claims ?? null))
+      setCheckingSession(false)
     })
 
     // Listen for auth changes
@@ -63,24 +60,7 @@ export default function App() {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
-
-  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setLoading(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    })
-    if (error) {
-      alert(error.message)
-    } else {
-      alert('Check your email for the login link!')
-    }
-    setLoading(false)
-  }
+  }, [navigate])
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut()
@@ -90,25 +70,15 @@ export default function App() {
     }
     setAuthSuccess(false)
     setClaims(null)
-  }
-
-  // Allow dashboard design work without a session on the development server.
-  if (isDashboardPreview) {
-    return (
-      <Dashboard
-        onLogout={async () => {
-          window.location.assign('/')
-        }}
-      />
-    )
+    navigate('/', { replace: true })
   }
 
   // Show verification state
-  if (verifying) {
+  if (verifying || checkingSession) {
     return (
       <div>
         <h1>Authentication</h1>
-        <p>Confirming your magic link...</p>
+        <p>{verifying ? 'Confirming your magic link...' : 'Checking your session...'}</p>
         <p>Loading...</p>
       </div>
     )
@@ -124,7 +94,7 @@ export default function App() {
         <button
           onClick={() => {
             setAuthError(null)
-            window.history.replaceState({}, document.title, '/')
+            navigate('/', { replace: true })
           }}
         >
           Return to login
@@ -144,28 +114,21 @@ export default function App() {
     )
   }
 
-  // If user is logged in, show dashboard
-  if (claims) {
-    return <Dashboard onLogout={handleLogout} />
-  }
-
-  // Show login form
   return (
-    <div>
-      <h1>Supabase + React</h1>
-      <p>Sign in via magic link with your email below</p>
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Your email"
-          value={email}
-          required={true}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <button disabled={loading}>
-          {loading ? <span>Loading</span> : <span>Send magic link</span>}
-        </button>
-      </form>
-    </div>
+    <Routes>
+      <Route
+        path="/"
+        element={claims ? <Navigate to="/dashboard" replace /> : <Login />}
+      />
+      <Route
+        path="/dashboard"
+        element={
+          claims || import.meta.env.DEV
+            ? <Dashboard onLogout={handleLogout} />
+            : <Navigate to="/" replace />
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
