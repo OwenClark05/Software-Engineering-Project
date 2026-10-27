@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../utils/supabase'
+import { Link } from 'react-router-dom'
 
 export default function Login() {
   const [enteredName, setEnteredName] = useState('')
@@ -87,9 +88,9 @@ export default function Login() {
         {errorMessage && <p role="alert">{errorMessage}</p>}
       </form>
       <p>Make an account</p>
-      <button type="button" disabled>
+      <Link to="/create-account">
         Create Account
-      </button>
+      </Link>
     </main>
   )
 }

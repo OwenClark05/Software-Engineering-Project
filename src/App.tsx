@@ -5,6 +5,7 @@ import type { JwtPayload } from '@supabase/supabase-js'
 import { supabase } from './utils/supabase'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
+import CreateAccount from './pages/CreateAccount'
 
 export default function App() {
   const navigate = useNavigate()
@@ -126,6 +127,12 @@ export default function App() {
           claims || import.meta.env.DEV
             ? <Dashboard onLogout={handleLogout} />
             : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/create-account"
+        element={
+          <CreateAccount />
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
