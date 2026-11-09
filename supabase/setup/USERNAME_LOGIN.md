@@ -50,4 +50,17 @@ Supabase Auth rate limits still apply to password checks. Before public release,
 add persistent request throttling/CAPTCHA to this public endpoint, including
 unknown-username attempts; browser CORS is not abuse protection. The development
 `/dashboard` preview still bypasses sign-in, so seeing it alone is not a login test.
-The separate Create Account page is not implemented.
+The Create Account page uses Supabase Auth signup and the profile trigger above.
+
+
+## Website account registration
+
+1. Run the updated `profiles.sql` in Supabase SQL Editor **before** enabling website registration. It adds a trigger that stores signup usernames in profiles atomically with Auth account creation. Check for any pre-existing profile-creation triggers to avoid duplicate inserts.
+2. Ensure the `login-with-username` Edge Function is deployed as described above.
+3. In Authentication settings, enable new user signups and the Email provider. Keep email confirmation enabled. Configure email delivery for your intended recipients (Supabase's default mail service restricts recipients; configure custom SMTP for other users).
+4. Set the Site URL and allowed redirect URL to `https://owenclark05.github.io/Software-Engineering-Project/`. For development, also allow your localhost root URL.
+5. Publish the frontend changes. Open Create Account, choose a unique username, enter an email you control and a password, and confirm the email. Then log in with the exact username and password.
+
+Verification: mismatched passwords should not submit; duplicate usernames should fail without creating an Auth account; successful signup should create a profiles row with the new Auth UUID. Test email confirmation, username login, incorrect passwords, logout, and refreshing the dashboard in the production build. With email confirmation disabled, signup should sign in immediately. Existing accounts without a profile still require the manual setup above.
+
+Reference: https://supabase.com/docs/guides/auth/managing-user-data
