@@ -142,6 +142,80 @@ fieldset {
   border-radius: 12px;
 }
 
+.vault-form h2 {
+  margin: 0 0 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.vault-form > label {
+  display: block;
+  margin-top: 20px;
+}
+
+.vault-form textarea {
+  min-height: 84px;
+}
+
+.vault-form > button {
+  margin-top: 20px;
+  margin-right: 10px;
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vault-card {
+  margin-top: 14px;
+  border: 1px solid #d7cde4;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.vault-card-header {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 0;
+  background: #faf8ff;
+  color: var(--color-purple);
+  text-align: left;
+}
+
+.vault-card-header:hover:not(:disabled) {
+  background: #f0eaff;
+}
+
+.vault-card-content {
+  padding: 18px;
+  border-top: 1px solid #d7cde4;
+}
+
+.vault-card-content p {
+  margin: 10px 0;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.card-actions button {
+  padding: 9px 14px;
+}
+
 [role='alert'] {
   padding: 12px;
   border-left: 4px solid var(--color-crimson);
